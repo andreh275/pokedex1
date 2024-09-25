@@ -25,7 +25,7 @@
       </div>
     </header>
 
-    <!-- Mensaje si no se encuentra el Pokémon -->
+    
     <div v-if="!selectedPokemon && searchQuery">
       <div class="not-found">
         <h2>Pokémon no encontrado</h2>
@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <!-- Detalles del Pokémon seleccionado -->
+    
     <div v-if="selectedPokemon" class="pokemon-list">
       <div 
         class="pokemon-card" 
@@ -79,7 +79,7 @@ export default {
       selectedPokemon: null,
       searchQuery: '',
       statNames: ['Hp', 'Attack', 'Defense', 'Special-attack', 'Special-defense', 'Speed'],
-      typeWeaknesses: {}, // Se llenará con datos de las debilidades originales
+      typeWeaknesses: {}, 
     };
   },
   methods: {
@@ -89,7 +89,6 @@ export default {
         const promises = ids.map(id => fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then(res => res.json()));
         this.pokemons = await Promise.all(promises);
 
-        // Cargar las debilidades de los tipos
         const types = await Promise.all(
           Array.from(new Set(this.pokemons.flatMap(pokemon => pokemon.types.map(type => type.type.name)))).map(type => fetch(`https://pokeapi.co/api/v2/type/${type}`).then(res => res.json()))
         );
@@ -98,7 +97,6 @@ export default {
           this.typeWeaknesses[type.name] = type.damage_relations.double_damage_from.map(weakness => weakness.name);
         });
 
-        // Mostrar un Pokémon aleatorio al cargar la página
         this.showRandomPokemon();
       } catch (error) {
         console.error('Error al cargar los Pokémon:', error);
@@ -115,7 +113,7 @@ export default {
         const pokemonById = this.pokemons.find(pokemon => pokemon.id === parseInt(query));
         this.selectedPokemon = pokemonById || null;
       } 
-      // Si no es un número, busca por nombre
+
       else {
         const pokemonByName = this.pokemons.find(pokemon =>
           pokemon.name.toLowerCase().includes(query)
@@ -147,7 +145,7 @@ export default {
       return colors[type] || '#D0D0D0';
     },
     getLegendaryColor(pokemon) {
-      // Definir colores especiales para Pokémon legendarios según su importancia
+
       const legendaryColors = {
         'legendary1': '#FFD700', // Dorado
         'legendary2': '#C0C0C0', // Plateado
@@ -191,7 +189,7 @@ export default {
 </script>
 
 <style>
-/* Estilos generales del app */
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   text-align: center;
@@ -201,7 +199,7 @@ export default {
   box-sizing: border-box;
 }
 
-/* Contenedor de las tarjetas de Pokémon */
+
 .pokemon-list {
   display: flex;
   justify-content: center;
@@ -209,7 +207,6 @@ export default {
   height: 80vh;
 }
 
-/* Estilos generales para las tarjetas de Pokémon */
 .pokemon-card {
   color: #333;
   padding: 20px;
@@ -221,13 +218,13 @@ export default {
   background: linear-gradient(to right, var(--type-color1, #fff), var(--type-color2, #fff));
 }
 
-/* Estilos para las imágenes grandes de los Pokémon */
+
 .pokemon-image {
   max-width: 100%;
   height: auto;
 }
 
-/* Estilos para las barras de estadísticas */
+
 .stat-bar {
   width: 100%;
   height: 10px;
@@ -242,7 +239,6 @@ export default {
   border-radius: 5px;
 }
 
-/* Estilos para los tipos de Pokémon */
 .type, .weakness {
   display: inline-block;
   padding: 5px 10px;
@@ -252,7 +248,6 @@ export default {
   text-transform: capitalize;
 }
 
-/* Estilos para el encabezado de la Pokedex */
 .pokedex-header {
   display: flex;
   justify-content: space-between;
@@ -268,7 +263,6 @@ export default {
   font-size: 1.5em;
 }
 
-/* Estilos del contenedor de búsqueda */
 .search-container {
   display: flex;
   align-items: center;
@@ -303,13 +297,12 @@ export default {
   height: 1px;
 }
 
-/* Estilos para cuando el Pokémon es legendario */
 .legendary {
   background-color: var(--legendary-color);
   animation: legendaryAnimation 1.5s infinite;
 }
 
-/* Animaciones */
+
 @keyframes pokemonAnimation {
   0% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
