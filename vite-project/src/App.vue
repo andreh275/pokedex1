@@ -1,15 +1,17 @@
 <template>
   <div id="app">
-
     <div class="youtube-audio-container">
       <iframe
-        src="https://youtu.be/PMqmYvl1L24?si=1Tz967ppVmW8b5S8"
+        ref="youtubeIframe"
+        width="0"
+        height="0"
+        src="https://www.youtube.com/embed/im6tbN9SZXs?autoplay=1&loop=1&playlist=im6tbN9SZXs"
         frameborder="0"
-        allow="autoplay"
+        allow="autoplay; encrypted-media"
         allowfullscreen
-        style="position: absolute; top: -9999px; width: 1px; height: 1px;"
       ></iframe>
     </div>
+
     <header class="pokedex-header">
       <div class="header-logo">
         <h1>Pokedex</h1>
@@ -25,18 +27,19 @@
       </div>
     </header>
 
-    
     <div v-if="!selectedPokemon && searchQuery">
       <div class="not-found">
         <h2>Pokémon no encontrado</h2>
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/54.png" alt="Pokémon confundido" />
+        <img
+          src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/54.png"
+          alt="Pokémon confundido"
+        />
       </div>
     </div>
 
-    
     <div v-if="selectedPokemon" class="pokemon-list">
-      <div 
-        class="pokemon-card" 
+      <div
+        class="pokemon-card"
         :class="{ legendary: selectedPokemon.isLegendary }"
         :style="getPokemonCardStyle(selectedPokemon)"
       >
@@ -45,14 +48,24 @@
         <img :src="selectedPokemon.sprites.front_default" :alt="selectedPokemon.name" />
         <div class="types">
           <h4>Tipos del Pokémon:</h4>
-          <div v-for="(type, index) in selectedPokemon.types" :key="index" class="type" :style="{ backgroundColor: getTypeColor(type.type.name) }">
+          <div
+            v-for="(type, index) in selectedPokemon.types"
+            :key="index"
+            class="type"
+            :style="{ backgroundColor: getTypeColor(type.type.name) }"
+          >
             {{ type.type.name }}
           </div>
         </div>
 
         <div class="weaknesses">
           <h4>Debilidades del Pokémon:</h4>
-          <div v-for="(weakness, index) in getWeaknesses(selectedPokemon)" :key="index" class="weakness" :style="{ backgroundColor: getTypeColor(weakness) }">
+          <div
+            v-for="(weakness, index) in getWeaknesses(selectedPokemon)"
+            :key="index"
+            class="weakness"
+            :style="{ backgroundColor: getTypeColor(weakness) }"
+          >
             {{ weakness }}
           </div>
         </div>
@@ -71,124 +84,116 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      pokemons: [],
-      selectedPokemon: null,
-      searchQuery: '',
-      statNames: ['Hp', 'Attack', 'Defense', 'Special-attack', 'Special-defense', 'Speed'],
-      typeWeaknesses: {}, 
-    };
-  },
-  methods: {
-    async fetchPokemons() {
-      try {
-        const ids = Array.from({ length: 1025 }, (_, index) => index + 1);
-        const promises = ids.map(id => fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then(res => res.json()));
-        this.pokemons = await Promise.all(promises);
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
 
-        const types = await Promise.all(
-          Array.from(new Set(this.pokemons.flatMap(pokemon => pokemon.types.map(type => type.type.name)))).map(type => fetch(`https://pokeapi.co/api/v2/type/${type}`).then(res => res.json()))
-        );
+const pokemons = ref([]);
+const selectedPokemon = ref(null);
+const searchQuery = ref('');
+const statNames = ['Hp', 'Attack', 'Defense', 'Special-attack', 'Special-defense', 'Speed'];
+const typeWeaknesses = reactive({});
 
-        types.forEach(type => {
-          this.typeWeaknesses[type.name] = type.damage_relations.double_damage_from.map(weakness => weakness.name);
-        });
+const fetchPokemons = async () => {
+  try {
+    const ids = Array.from({ length: 1025 }, (_, index) => index + 1);
+    const promises = ids.map((id) =>
+      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json())
+    );
+    pokemons.value = await Promise.all(promises);
 
-        this.showRandomPokemon();
-      } catch (error) {
-        console.error('Error al cargar los Pokémon:', error);
-      }
-    },
-    showRandomPokemon() {
-      const randomIndex = Math.floor(Math.random() * this.pokemons.length);
-      this.selectedPokemon = this.pokemons[randomIndex];
-    },
-    filterPokemons() {
-      const query = this.searchQuery.toLowerCase();
+    const types = await Promise.all(
+      Array.from(new Set(pokemons.value.flatMap((pokemon) => pokemon.types.map((type) => type.type.name))))
+        .map((type) => fetch(`https://pokeapi.co/api/v2/type/${type}`).then((res) => res.json()))
+    );
 
-      if (!isNaN(query)) {
-        const pokemonById = this.pokemons.find(pokemon => pokemon.id === parseInt(query));
-        this.selectedPokemon = pokemonById || null;
-      } 
+    types.forEach((type) => {
+      typeWeaknesses[type.name] = type.damage_relations.double_damage_from.map((weakness) => weakness.name);
+    });
 
-      else {
-        const pokemonByName = this.pokemons.find(pokemon =>
-          pokemon.name.toLowerCase().includes(query)
-        );
-        this.selectedPokemon = pokemonByName || null;
-      }
-    },
-    getTypeColor(type) {
-      const colors = {
-        normal: '#A8A878',
-        fire: '#F08030',
-        water: '#6890F0',
-        electric: '#F8D030',
-        grass: '#78C850',
-        ice: '#98D8D8',
-        fighting: '#C03028',
-        poison: '#A040A0',
-        ground: '#E0C068',
-        flying: '#A890F0',
-        psychic: '#F85888',
-        bug: '#A8B820',
-        rock: '#B8A038',
-        ghost: '#705898',
-        dragon: '#7038F8',
-        dark: '#705848',
-        steel: '#B8B8D0',
-        fairy: '#F0B6BC'
-      };
-      return colors[type] || '#D0D0D0';
-    },
-    getLegendaryColor(pokemon) {
-
-      const legendaryColors = {
-        'legendary1': '#FFD700', // Dorado
-        'legendary2': '#C0C0C0', // Plateado
-        'legendary3': '#D3D3D3', // Tornasol
-      };
-      return legendaryColors[pokemon.legendaryStatus] || '#D0D0D0';
-    },
-    getPokemonCardStyle(pokemon) {
-      if (pokemon.isLegendary) {
-        return {
-          '--legendary-color': this.getLegendaryColor(pokemon),
-          backgroundColor: 'var(--legendary-color)',
-          animation: 'legendaryAnimation 1.5s infinite'
-        };
-      } else {
-        const primaryType = pokemon.types[0].type.name;
-        const secondaryType = pokemon.types[1] ? pokemon.types[1].type.name : null;
-        return {
-          background: secondaryType
-            ? `linear-gradient(to right, ${this.getTypeColor(primaryType)}, ${this.getTypeColor(secondaryType)})`
-            : this.getTypeColor(primaryType),
-          animation: 'pokemonAnimation 1.5s infinite'
-        };
-      }
-    },
-    getWeaknesses(pokemon) {
-      const weaknesses = new Set();
-      pokemon.types.forEach(type => {
-        const typeName = type.type.name;
-        if (this.typeWeaknesses[typeName]) {
-          this.typeWeaknesses[typeName].forEach(weakness => weaknesses.add(weakness));
-        }
-      });
-      return Array.from(weaknesses);
-    }
-  },
-  mounted() {
-    this.fetchPokemons();
+    showRandomPokemon();
+  } catch (error) {
+    console.error('Error al cargar los Pokémon:', error);
   }
 };
+
+const showRandomPokemon = () => {
+  const randomIndex = Math.floor(Math.random() * pokemons.value.length);
+  selectedPokemon.value = pokemons.value[randomIndex];
+};
+
+const filterPokemons = () => {
+  const query = searchQuery.value.toLowerCase();
+
+  if (!isNaN(query)) {
+    const pokemonById = pokemons.value.find((pokemon) => pokemon.id === parseInt(query));
+    selectedPokemon.value = pokemonById || null;
+  } else {
+    const pokemonByName = pokemons.value.find((pokemon) => pokemon.name.toLowerCase().includes(query));
+    selectedPokemon.value = pokemonByName || null;
+  }
+};
+
+
+const getTypeColor = (type) => {
+  const colors = {
+    normal: '#A8A878',
+    fire: '#F08030',
+    water: '#6890F0',
+    electric: '#F8D030',
+    grass: '#78C850',
+    ice: '#98D8D8',
+    fighting: '#C03028',
+    poison: '#A040A0',
+    ground: '#E0C068',
+    flying: '#A890F0',
+    psychic: '#F85888',
+    bug: '#A8B820',
+    rock: '#B8A038',
+    ghost: '#705898',
+    dragon: '#7038F8',
+    dark: '#705848',
+    steel: '#B8B8D0',
+    fairy: '#F0B6BC',
+  };
+  return colors[type] || '#D0D0D0';
+};
+
+const getPokemonCardStyle = (pokemon) => {
+  if (pokemon.isLegendary) {
+    return {
+      '--legendary-color': getLegendaryColor(pokemon),
+      backgroundColor: 'var(--legendary-color)',
+      animation: 'legendaryAnimation 1.5s infinite',
+    };
+  } else {
+    const primaryType = pokemon.types[0].type.name;
+    const secondaryType = pokemon.types[1] ? pokemon.types[1].type.name : null;
+    return {
+      background: secondaryType
+        ? `linear-gradient(to right, ${getTypeColor(primaryType)}, ${getTypeColor(secondaryType)})`
+        : getTypeColor(primaryType),
+      animation: 'pokemonAnimation 1.5s infinite',
+    };
+  }
+};
+
+const getWeaknesses = (pokemon) => {
+  const weaknesses = new Set();
+  pokemon.types.forEach((type) => {
+    const typeName = type.type.name;
+    if (typeWeaknesses[typeName]) {
+      typeWeaknesses[typeName].forEach((weakness) => weaknesses.add(weakness));
+    }
+  });
+  return Array.from(weaknesses);
+};
+
+onMounted(() => {
+  fetchPokemons();
+});
 </script>
 
-<style>
+<style scoped>
 
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -198,7 +203,6 @@ export default {
   padding: 20px;
   box-sizing: border-box;
 }
-
 
 .pokemon-list {
   display: flex;
@@ -218,12 +222,10 @@ export default {
   background: linear-gradient(to right, var(--type-color1, #fff), var(--type-color2, #fff));
 }
 
-
 .pokemon-image {
   max-width: 100%;
   height: auto;
 }
-
 
 .stat-bar {
   width: 100%;
@@ -239,6 +241,7 @@ export default {
   border-radius: 5px;
 }
 
+
 .type, .weakness {
   display: inline-block;
   padding: 5px 10px;
@@ -247,6 +250,7 @@ export default {
   border-radius: 15px;
   text-transform: capitalize;
 }
+
 
 .pokedex-header {
   display: flex;
@@ -297,6 +301,7 @@ export default {
   height: 1px;
 }
 
+/* Estilos para cuando el Pokémon es legendario */
 .legendary {
   background-color: var(--legendary-color);
   animation: legendaryAnimation 1.5s infinite;
@@ -314,5 +319,4 @@ export default {
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
-
 </style>
